@@ -14,7 +14,7 @@ export default function manifest() {
         type: "image/x-icon",
       },
       {
-        src: "/assets/profile-img.png",
+        src: "/assets/dev-icon.png",
         sizes: "192x192",
         type: "image/png",
         purpose: "maskable any",
