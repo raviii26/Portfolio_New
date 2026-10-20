@@ -77,12 +77,22 @@ export async function POST(request) {
       city = "Localhost";
     }
 
+    // Skip connecting to localhost MySQL on Vercel serverless environment if DB_HOST is unset or localhost
+    const isVercel = process.env.VERCEL === "1" || process.env.NEXT_PUBLIC_VERCEL_ENV;
+    const dbHost = process.env.DB_HOST || "localhost";
+    
+    if (isVercel && (dbHost === "localhost" || dbHost === "127.0.0.1")) {
+      // In Vercel serverless without an external database, return gracefully
+      return NextResponse.json({ success: true, message: "Logged (standalone mode)" });
+    }
+
     // Save to MySQL
     const connection = await mysql.createConnection({
-      host: process.env.DB_HOST || "localhost",
+      host: dbHost,
       user: process.env.DB_USER || "root",
       password: process.env.DB_PASSWORD || "ravi",
       database: process.env.DB_NAME || "portfolio_db",
+      connectTimeout: 3000,
     });
 
     await connection.execute(

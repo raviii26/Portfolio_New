@@ -75,12 +75,13 @@ A modern, high-performance personal portfolio web application built with **Next.
 ## 📂 Project Architecture
 
 ```plaintext
-nextjs/
+Portfolio_New/
 ├── .github/
 │   └── workflows/
-│       └── ci.yml             # GitHub Actions CI pipeline
+│       └── ci.yml             # GitHub Actions CI/CD pipeline
 ├── app/
 │   ├── admin/
+│   │   ├── page.js            # Admin console hub
 │   │   ├── contacts/          # Admin view for contact submissions
 │   │   └── logs/              # Admin view for visitor analytics
 │   ├── api/
@@ -89,8 +90,12 @@ nextjs/
 │   │   ├── log-visit/         # Visitor logging POST endpoint
 │   │   └── visitor-logs/      # Visitor logs retrieval API
 │   ├── globals.css            # Global CSS styles & Tailwind directives
-│   ├── layout.js              # Root layout & font configuration
-│   └── page.js                # Main portfolio page entry
+│   ├── layout.js              # Root layout, fonts, SEO metadata & JSON-LD
+│   ├── manifest.js            # PWA Web App Manifest
+│   ├── not-found.js           # Branded 404 page
+│   ├── page.js                # Main portfolio page entry
+│   ├── robots.js              # Dynamic robots.txt generator
+│   └── sitemap.js             # Dynamic sitemap.xml generator
 ├── components/
 │   ├── animations/            # Lenis scroll, Preloader, Page reveal
 │   ├── layout/                # EstateNavbar, Header, Footer
@@ -100,9 +105,10 @@ nextjs/
 │   └── assets/                # Logos, tech icons, profile graphics
 ├── .env.example               # Template environment configuration
 ├── eslint.config.mjs          # Flat ESLint configuration
-├── next.config.mjs            # Next.js build and image optimization settings
+├── next.config.mjs            # Next.js build, security & image settings
 ├── package.json               # Dependencies and build scripts
-└── tailwind.config.js         # Tailwind theme & design tokens
+├── tailwind.config.js         # Tailwind theme & design tokens
+└── vercel.json                # Vercel deployment configuration
 ```
 
 ---
@@ -114,14 +120,14 @@ nextjs/
 Ensure you have the following installed on your machine:
 - **Node.js**: `v20.x` or higher
 - **npm**: `v10.x` or higher
-- **MySQL**: `v8.x` or equivalent cloud instance
+- **MySQL**: `v8.x` or equivalent cloud instance (optional for local/serverless fallback)
 
 ### Installation
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/raviii26/portfolio.git
-   cd portfolio/nextjs
+   git clone https://github.com/raviii26/Portfolio_New.git
+   cd Portfolio_New
    ```
 
 2. **Install dependencies**:
@@ -201,12 +207,50 @@ The repository includes protected administration routes:
 
 ## 🔄 CI/CD Pipeline
 
-A continuous integration workflow is configured via [GitHub Actions](.github/workflows/ci.yml). Every push or pull request to `main` executes:
+A continuous integration and continuous deployment workflow is configured via [GitHub Actions](.github/workflows/ci.yml):
 
-1. Environment checkout (`ubuntu-latest`, Node.js 20)
-2. Clean dependency installation (`npm ci`)
-3. Code linting (`npm run lint`)
-4. Production compilation test (`npm run build`)
+### 1. 🧪 Continuous Integration (CI)
+Triggered on every **push** and **pull request** targeting `main`:
+- Environment checkout (`ubuntu-latest`, Node.js 20)
+- Automated `.next/cache` restoration for ultra-fast incremental builds
+- Clean dependency installation (`npm ci`)
+- Code quality validation (`npm run lint`)
+- Full production compilation test (`npm run build`)
+
+### 2. 🚀 Continuous Deployment (CD)
+Triggered automatically when CI checks pass on the `main` branch:
+- Deploys the verified build directly to **Vercel Production**.
+- To enable direct deployment from GitHub Actions, add these repository secrets in **GitHub** > **Settings** > **Secrets and variables** > **Actions**:
+  - `VERCEL_TOKEN`: Vercel Personal Access Token ([vercel.com/account/tokens](https://vercel.com/account/tokens))
+  - `VERCEL_ORG_ID`: Your Vercel Organization / User ID
+  - `VERCEL_PROJECT_ID`: Your Vercel Project ID
+
+*(Note: If using Vercel’s native Git integration, Vercel will also automatically deploy whenever commits are pushed to `main`).*
+
+---
+
+## 🚀 Vercel Deployment & 404 Prevention Guide
+
+To deploy this project to Vercel without 404 errors:
+
+1. **Import Repository**:
+   - In Vercel, click **Add New...** > **Project** and select `Portfolio_New`.
+2. **Verify Project Settings**:
+   - **Framework Preset**: Select `Next.js`.
+   - **Root Directory**: Leave as `./` (do not set to `nextjs` or subfolder).
+   - **Build Command**: `npm run build` (or default Next.js build).
+   - **Output Directory**: Leave default (`.next`).
+3. **Environment Variables**:
+   Configure these in Vercel **Settings** > **Environment Variables**:
+   - `NEXT_PUBLIC_SITE_URL`: Your production Vercel domain (e.g. `https://portfolio-new.vercel.app`)
+   - `DB_HOST`: (Optional) Remote MySQL host (Aiven, PlanetScale, Railway, AWS RDS)
+   - `DB_USER`: Database username
+   - `DB_PASSWORD`: Database password
+   - `DB_NAME`: `portfolio_db`
+   - `EMAIL_USER`: Your Gmail address
+   - `EMAIL_PASS`: Gmail App Password (16 characters)
+4. **Deploy**:
+   Click **Deploy**. All routes (`/`, `/admin`, `/admin/contacts`, `/admin/logs`, `/sitemap.xml`, `/robots.txt`) will be live immediately.
 
 ---
 

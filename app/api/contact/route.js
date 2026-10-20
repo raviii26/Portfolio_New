@@ -21,29 +21,35 @@ export async function POST(request) {
 
     let dbSaved = false;
 
-    // 1. Save data to MySQL database
-    try {
-      // Connect using environment variables
-      const connection = await mysql.createConnection({
-        host: process.env.DB_HOST || "localhost",
-        user: process.env.DB_USER || "root",
-        password: process.env.DB_PASSWORD || "ravi",
-        database: process.env.DB_NAME || "portfolio_db",
-      });
+    // 1. Save data to MySQL database (if database is configured)
+    const isVercel = process.env.VERCEL === "1" || process.env.NEXT_PUBLIC_VERCEL_ENV;
+    const dbHost = process.env.DB_HOST || "localhost";
+    const skipDb = isVercel && (dbHost === "localhost" || dbHost === "127.0.0.1");
 
-      const sql =
-        "INSERT INTO contacts (name, email, subject, message) VALUES (?, ?, ?, ?)";
-      await connection.execute(sql, [
-        name,
-        email,
-        subject || "No Subject Provided",
-        message,
-      ]);
-      await connection.end();
-      dbSaved = true;
-    } catch (dbError) {
-      console.error("Database insertion failed:", dbError);
-      // We continue even if DB fails so we can try to send the email
+    if (!skipDb) {
+      try {
+        const connection = await mysql.createConnection({
+          host: dbHost,
+          user: process.env.DB_USER || "root",
+          password: process.env.DB_PASSWORD || "ravi",
+          database: process.env.DB_NAME || "portfolio_db",
+          connectTimeout: 3000,
+        });
+
+        const sql =
+          "INSERT INTO contacts (name, email, subject, message) VALUES (?, ?, ?, ?)";
+        await connection.execute(sql, [
+          name,
+          email,
+          subject || "No Subject Provided",
+          message,
+        ]);
+        await connection.end();
+        dbSaved = true;
+      } catch (dbError) {
+        console.error("Database insertion failed:", dbError);
+        // We continue even if DB fails so we can try to send the email
+      }
     }
 
     // 2. Try to send email if configured
